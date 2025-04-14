@@ -34,14 +34,37 @@ const functions = [
 
 const functionHandlers = {
   show_products: ({ searchTerm, maxPrice }: { searchTerm?: string; maxPrice?: number }) => {
-    let filteredProducts = products[0].allContentstackproducts.nodes;
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filteredProducts = filteredProducts.filter(p => 
-        p.title.toLowerCase().includes(term)
-      );
-    }
+    // First, get all jacket-related products
+    const jacketProducts = [
+      ...products[0].allContentstackproducts.nodes
+        .filter(p => {
+          const title = p.title.toLowerCase();
+          return title.includes('jacket') || 
+                 title.includes('coat') || 
+                 title.includes('windbreaker');
+        })
+        .map(p => ({
+          id: p.id,
+          title: p.title,
+          price: p.price,
+          image: p.product_image.url
+        })),
+      ...products[0].allLegacyProduct.edges
+        .filter(e => {
+          const title = e.node.title.toLowerCase();
+          return title.includes('jacket') || 
+                 title.includes('coat') || 
+                 title.includes('windbreaker');
+        })
+        .map(e => ({
+          id: e.node.id,
+          title: e.node.title,
+          price: e.node.price,
+          image: e.node.image
+        }))
+    ];
+
+    let filteredProducts = jacketProducts;
     
     if (maxPrice) {
       filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
@@ -53,7 +76,7 @@ const functionHandlers = {
         id: p.id,
         name: p.title,
         price: p.price,
-        image: p.product_image.url,
+        image: p.image,
         description: ""
       }))
     };
@@ -76,7 +99,13 @@ export const handler: Handler = async (event) => {
         const body = JSON.parse(event.body);
         console.log('Parsed body:', body);
 
-        const messages = body.messages || [];
+        const messages = [
+            {
+                role: "system",
+                content: "You are a helpful shopping assistant. Use the show_products function when users ask about products. Keep responses concise and friendly. DO NOT include markdown images or links in your responses as products will be displayed separately. Just describe the products in text."
+            },
+            ...(body.messages || [])
+        ];
         console.log('Extracted messages:', messages);
 
         const response = await openai.chat.completions.create({
