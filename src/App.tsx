@@ -29,7 +29,15 @@ function App() {
 
     // Generate bot response
     try {
-      const response = await generateBotResponse(input);
+      // Pass full message history for context
+      const chatHistory = messages.map(msg => ({
+        role: msg.isBot ? 'assistant' : 'user',
+        content: msg.isBot && msg.products ? 
+          JSON.stringify({ message: msg.text, products: msg.products }) : 
+          msg.text
+      }));
+      
+      const response = await generateBotResponse(input, chatHistory);
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: response.text,

@@ -1,6 +1,9 @@
 import { Product } from '../types';
 
-export async function generateBotResponse(userInput: string): Promise<{ text: string; products?: Product[] }> {
+export async function generateBotResponse(
+  userInput: string,
+  chatHistory: Array<{ role: string; content: string }> = []
+): Promise<{ text: string; products?: Product[] }> {
   try {
     const response = await fetch('/.netlify/functions/openai', {
       method: 'POST',
@@ -9,10 +12,7 @@ export async function generateBotResponse(userInput: string): Promise<{ text: st
       },
       body: JSON.stringify({
         messages: [
-          {
-            role: "system",
-            content: "You are a helpful shopping assistant. Use the show_products function when users ask about products, and keep responses concise and friendly."
-          },
+          ...chatHistory,
           {
             role: "user",
             content: userInput
@@ -26,7 +26,7 @@ export async function generateBotResponse(userInput: string): Promise<{ text: st
     }
 
     const data = await response.json();
-
+    
     return {
       text: data.message || "I'm sorry, I couldn't process that request.",
       products: data.products

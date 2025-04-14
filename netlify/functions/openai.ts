@@ -48,13 +48,13 @@ export const handler: Handler = async (event) => {
 
     const systemMessage = {
       role: "system",
-      content: `You are a helpful shopping assistant. When users ask about products, search through this catalog and return relevant items:
+      content: `You are a helpful shopping assistant. When users ask about products, search through this catalog and return relevant items. You can also answer follow-up questions about previously shown products.
 
 ${JSON.stringify(allProducts, null, 2)}
 
 Return your response in this JSON format:
 {
-  "message": "A friendly detailed message describing what you found, give a summar of the products",
+  "message": "A friendly detailed message addressing the user's query. For follow-ups, reference specific products by name.",
   "products": [
     {
       "id": "product_id",
@@ -68,12 +68,37 @@ Return your response in this JSON format:
 
 Always return valid JSON. If no products match, return an empty products array.
 Sort products by relevance to the user's query.
+For follow-up questions about specific products, refer to the previous messages to maintain context.
 `
     };
 
+    // Extract previously shown products from chat history
+    const previousProducts = body.messages
+      .filter(msg => msg.role === 'assistant')
+      .flatMap(msg => {
+        try {
+          // First try to parse the content as JSON
+          const content = JSON.parse(msg.content);
+          return content.products || [];
+        } catch {
+          // If parsing fails, it means this was a regular message
+          return [];
+        }
+      });
+
+    // Filter out system messages from the history to avoid duplication
+    const userAssistantMessages = body.messages.filter(msg => 
+      msg.role === 'user' || msg.role === 'assistant'
+    );
+
     const messages = [
       systemMessage,
-      ...body.messages
+      // Add context about previously shown products if any exist
+      ...(previousProducts.length > 0 ? [{
+        role: "system",
+        content: `Previously shown products: ${JSON.stringify(previousProducts)}`
+      }] : []),
+      ...userAssistantMessages
     ];
 
     const completion = await openai.chat.completions.create({
