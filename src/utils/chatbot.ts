@@ -1,19 +1,7 @@
-import { products } from '../data/products';
 import { Product } from '../types';
-
-export function findProducts(query: string): Product[] {
-  const searchTerms = query.toLowerCase().split(' ');
-  
-  return products.filter(product => {
-    const productText = `${product.name} ${product.description}`.toLowerCase();
-    return searchTerms.some(term => productText.includes(term));
-  });
-}
 
 export async function generateBotResponse(userInput: string): Promise<{ text: string; products?: Product[] }> {
   try {
-    const matchedProducts = findProducts(userInput);
-    
     const response = await fetch('/.netlify/functions/openai', {
       method: 'POST',
       headers: {
@@ -23,13 +11,11 @@ export async function generateBotResponse(userInput: string): Promise<{ text: st
         messages: [
           {
             role: "system",
-            content: "You are a helpful shopping assistant. Keep responses concise and friendly."
+            content: "You are a helpful shopping assistant. Use the show_products function when users ask about products, and keep responses concise and friendly."
           },
           {
             role: "user",
-            content: `User message: ${userInput}\n${matchedProducts.length > 0 ? 
-              `Found these products: ${JSON.stringify(matchedProducts)}` : 
-              'No specific products found.'}`
+            content: userInput
           }
         ]
       })
@@ -42,8 +28,8 @@ export async function generateBotResponse(userInput: string): Promise<{ text: st
     const data = await response.json();
 
     return {
-      text: data.message || "I'm sorry, I couldn't process that request.",
-      ...(matchedProducts.length > 0 && { products: matchedProducts })
+      text: data.response || "I'm sorry, I couldn't process that request.",
+      products: data.products
     };
 
   } catch (error) {
