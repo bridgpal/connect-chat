@@ -65,18 +65,18 @@ function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <div className="flex-1 flex items-stretch p-4">
+    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+      <div className="flex-1 flex items-stretch p-4 overflow-hidden">
         <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden max-w-5xl w-full mx-auto">
           {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
           </div>
           
           {/* Input area */}
-          <div className="border-t p-4 bg-white">
+          <div className="border-t p-4 bg-white shrink-0">
             <div className="flex items-center gap-2">
               <input
                 type="text"
