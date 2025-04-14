@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { ChatMessage } from './components/ChatMessage';
 import { generateBotResponse } from './utils/chatbot';
 import { Message } from './types';
 
 function App() {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -13,6 +14,14 @@ function App() {
     },
   ]);
   const [input, setInput] = useState('');
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -73,6 +82,7 @@ function App() {
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
+            <div ref={messagesEndRef} />
           </div>
           
           {/* Input area */}
