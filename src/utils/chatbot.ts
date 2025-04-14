@@ -28,7 +28,7 @@ export async function generateBotResponse(userInput: string): Promise<{ text: st
     const data = await response.json();
 
     return {
-      text: data.response || "I'm sorry, I couldn't process that request.",
+      text: data.message || "I'm sorry, I couldn't process that request.",
       products: data.products
     };
 
