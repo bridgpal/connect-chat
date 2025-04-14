@@ -54,7 +54,7 @@ ${JSON.stringify(allProducts, null, 2)}
 
 Return your response in this JSON format:
 {
-  "message": "A friendly message describing what you found",
+  "message": "A friendly detailed message describing what you found, give a summar of the products",
   "products": [
     {
       "id": "product_id",
@@ -68,7 +68,7 @@ Return your response in this JSON format:
 
 Always return valid JSON. If no products match, return an empty products array.
 Sort products by relevance to the user's query.
-Keep the message concise and friendly.`
+`
     };
 
     const messages = [

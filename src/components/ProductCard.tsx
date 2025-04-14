@@ -6,11 +6,11 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden ">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden m-1 p-2 ">
       <img 
         src={product.image} 
         alt={product.name}
-        className=" object-cover"
+        className="w-full h-48 object-contain object-center bg-gray-50"
       />
       <div className="p-1.5">
         <h3 className="text-xs font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
