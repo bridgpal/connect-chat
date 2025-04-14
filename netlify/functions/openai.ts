@@ -33,39 +33,36 @@ const functions = [
 ];
 
 const functionHandlers = {
-  show_products: ({ searchTerm, maxPrice }: { searchTerm?: string; maxPrice?: number }) => {
-    // First, get all jacket-related products
-    const jacketProducts = [
-      ...products[0].allContentstackproducts.nodes
-        .filter(p => {
-          const title = p.title.toLowerCase();
-          return title.includes('jacket') || 
-                 title.includes('coat') || 
-                 title.includes('windbreaker');
-        })
-        .map(p => ({
-          id: p.id,
-          title: p.title,
-          price: p.price,
-          image: p.product_image.url
-        })),
-      ...products[0].allLegacyProduct.edges
-        .filter(e => {
-          const title = e.node.title.toLowerCase();
-          return title.includes('jacket') || 
-                 title.includes('coat') || 
-                 title.includes('windbreaker');
-        })
-        .map(e => ({
-          id: e.node.id,
-          title: e.node.title,
-          price: e.node.price,
-          image: e.node.image
-        }))
+  show_products: ({ searchTerm, maxPrice, category }: { searchTerm?: string; maxPrice?: number; category?: string }) => {
+    // Get all products from both sources
+    const allProducts = [
+      ...products[0].allContentstackproducts.nodes.map(p => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        image: p.product_image.url,
+        description: ""
+      })),
+      ...products[0].allLegacyProduct.edges.map(e => ({
+        id: e.node.id,
+        title: e.node.title,
+        price: e.node.price,
+        image: e.node.image,
+        description: e.node.description
+      }))
     ];
 
-    let filteredProducts = jacketProducts;
-    
+    let filteredProducts = allProducts;
+
+    // Let OpenAI's context handle the filtering through searchTerm and category
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filteredProducts = filteredProducts.filter(p => 
+        p.title.toLowerCase().includes(search) || 
+        p.description.toLowerCase().includes(search)
+      );
+    }
+
     if (maxPrice) {
       filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
     }
@@ -77,7 +74,7 @@ const functionHandlers = {
         name: p.title,
         price: p.price,
         image: p.image,
-        description: ""
+        description: p.description
       }))
     };
   }
@@ -102,7 +99,7 @@ export const handler: Handler = async (event) => {
         const messages = [
             {
                 role: "system",
-                content: "You are a helpful shopping assistant. Use the show_products function when users ask about products. Keep responses concise and friendly. DO NOT include markdown images or links in your responses as products will be displayed separately. Just describe the products in text."
+                content: "You are a helpful shopping assistant. Use the show_products function when users ask about products, using the searchTerm parameter to find relevant products. Keep responses concise and friendly. DO NOT include markdown images or links in your responses as products will be displayed separately. Just describe the products in text. When searching, be creative with the search terms to find the most relevant products."
             },
             ...(body.messages || [])
         ];
