@@ -15,17 +15,13 @@ const functions = [
     parameters: {
       type: "object",
       properties: {
-        category: {
+        searchTerm: {
           type: "string",
-          description: "Category of products to show (optional)",
+          description: "Search term to filter products by title or description"
         },
         maxPrice: {
           type: "number",
-          description: "Maximum price filter (optional)",
-        },
-        searchTerm: {
-          type: "string",
-          description: "Search term to filter products by title or description (optional)",
+          description: "Maximum price filter (optional)"
         }
       }
     }
@@ -33,49 +29,71 @@ const functions = [
 ];
 
 const functionHandlers = {
-  show_products: ({ searchTerm, maxPrice, category }: { searchTerm?: string; maxPrice?: number; category?: string }) => {
-    // Get all products from both sources
+  show_products: ({ searchTerm, maxPrice }: { searchTerm?: string; maxPrice?: number }) => {
+    // Get all products
     const allProducts = [
       ...products[0].allContentstackproducts.nodes.map(p => ({
         id: p.id,
-        title: p.title,
-        price: p.price,
-        image: p.product_image.url,
-        description: ""
+        title: p.title || '',
+        price: typeof p.price === 'number' ? p.price : 0,
+        image: p.product_image?.url || '',
+        description: ''
       })),
       ...products[0].allLegacyProduct.edges.map(e => ({
         id: e.node.id,
-        title: e.node.title,
-        price: e.node.price,
-        image: e.node.image,
-        description: e.node.description
+        title: e.node.title || '',
+        price: typeof e.node.price === 'number' ? e.node.price : 0,
+        image: e.node.image || '',
+        description: e.node.description || ''
       }))
     ];
 
     let filteredProducts = allProducts;
 
-    // Let OpenAI's context handle the filtering through searchTerm and category
+    // Filter by search term
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filteredProducts = filteredProducts.filter(p => 
-        p.title.toLowerCase().includes(search) || 
-        p.description.toLowerCase().includes(search)
-      );
+      const terms = searchTerm.toLowerCase().split(/\s+/);
+      filteredProducts = filteredProducts.filter(p => {
+        const searchText = `${p.title} ${p.description}`.toLowerCase();
+        // Match if ANY search term is found (more flexible)
+        return terms.some(term => searchText.includes(term));
+      });
     }
 
+    // Filter by price
     if (maxPrice) {
       filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
     }
 
+    // Map and sort by relevance
+    const mappedProducts = filteredProducts.map(p => ({
+      id: p.id,
+      name: p.title,
+      price: p.price,
+      image: p.image,
+      description: p.description || p.title
+    }));
+
+    if (searchTerm) {
+      const terms = searchTerm.toLowerCase().split(/\s+/);
+      mappedProducts.sort((a, b) => {
+        const aScore = terms.reduce((score, term) => {
+          const nameMatches = (a.name.toLowerCase().match(new RegExp(term, 'g')) || []).length;
+          const descMatches = (a.description.toLowerCase().match(new RegExp(term, 'g')) || []).length;
+          return score + (nameMatches * 2) + descMatches;
+        }, 0);
+        const bScore = terms.reduce((score, term) => {
+          const nameMatches = (b.name.toLowerCase().match(new RegExp(term, 'g')) || []).length;
+          const descMatches = (b.description.toLowerCase().match(new RegExp(term, 'g')) || []).length;
+          return score + (nameMatches * 2) + descMatches;
+        }, 0);
+        return bScore - aScore;
+      });
+    }
+
     return {
       type: "products",
-      products: filteredProducts.map(p => ({
-        id: p.id,
-        name: p.title,
-        price: p.price,
-        image: p.image,
-        description: p.description
-      }))
+      products: mappedProducts
     };
   }
 };
