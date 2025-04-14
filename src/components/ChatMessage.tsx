@@ -8,10 +8,10 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} mb-4`}>
-      <div className={`max-w-[70%] ${message.isBot ? 'bg-gray-200' : 'bg-blue-500 text-white'} rounded-lg p-3`}>
-        <p>{message.text}</p>
+      <div className={`${message.products ? 'w-[600px]' : 'max-w-[70%]'} ${message.isBot ? 'bg-gray-200' : 'bg-blue-500 text-white'} rounded-lg p-3`}>
+        <p className="mb-4">{message.text}</p> 
         {message.products && (
-          <div className="grid grid-cols-1 gap-4 mt-4">
+          <div className="grid grid-cols-3 gap-4">
             {message.products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
