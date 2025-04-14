@@ -26,7 +26,14 @@ export const handler: Handler = async (event) => {
       throw new Error('No body provided');
     }
 
-    const body = JSON.parse(event.body);
+    if (!event.body) {
+      throw new Error('Request body is required');
+    }
+
+    const body = JSON.parse(event.body) as { messages: Array<{ role: string; content: string; }> };
+    if (!Array.isArray(body.messages)) {
+      throw new Error('Messages array is required');
+    }
 
     // Get all available products
     const allProducts = [
@@ -46,33 +53,52 @@ export const handler: Handler = async (event) => {
       }))
     ];
 
+    // Define the function schema for structured output
+    const functions = [
+      {
+        name: 'get_product_response',
+        description: 'Generate a response with relevant products based on user query',
+        parameters: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: 'A friendly detailed message addressing the user\'s query'
+            },
+            products: {
+              type: 'array',
+              description: 'List of relevant products matching the query',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  price: { type: 'number' },
+                  image: { type: 'string' },
+                  description: { type: 'string' }
+                },
+                required: ['id', 'name', 'price', 'image', 'description']
+              }
+            }
+          },
+          required: ['message', 'products']
+        }
+      }
+    ];
+
     const systemMessage = {
-      role: "system",
+      role: 'system',
       content: `You are a helpful shopping assistant. When users ask about products, search through this catalog and return relevant items. You can also answer follow-up questions about previously shown products.
 
 ${JSON.stringify(allProducts, null, 2)}
 
-Return your response in this JSON format:
-{
-  "message": "A friendly detailed message addressing the user's query. For follow-ups, reference specific products by name.",
-  "products": [
-    {
-      "id": "product_id",
-      "name": "product name",
-      "price": number,
-      "image": "image url",
-      "description": "product description"
-    }
-  ]
-}
-
-Always return valid JSON. If no products match, return an empty products array.
+Use the get_product_response function to structure your response.
+If no products match, return an empty products array.
 Sort products by relevance to the user's query.
-For follow-up questions about specific products, refer to the previous messages to maintain context.
-`
+For follow-up questions about specific products, refer to the previous messages to maintain context.`
     };
 
-    // Extract previously shown products from chat history
+    // Extract previously shown products from chat history with better error handling
     const previousProducts = body.messages
       .filter(msg => msg.role === 'assistant')
       .flatMap(msg => {
@@ -103,13 +129,21 @@ For follow-up questions about specific products, refer to the previous messages 
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages,
+      messages: messages as OpenAI.Chat.ChatCompletionMessageParam[],
+      functions,
+      function_call: { name: 'get_product_response' },
       temperature: 0.7,
       max_tokens: 1500
     });
 
     const responseMessage = completion.choices[0].message;
-    const response = JSON.parse(responseMessage.content) as ChatResponse;
+    const functionCall = responseMessage.function_call;
+    
+    if (!functionCall || !functionCall.arguments) {
+      throw new Error('Expected function call response');
+    }
+
+    const response = JSON.parse(functionCall.arguments) as ChatResponse;
 
     return {
       statusCode: 200,
