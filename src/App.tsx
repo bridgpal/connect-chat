@@ -57,11 +57,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="h-[600px] flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-100">
+      <div className="flex-1 flex items-stretch p-4">
+        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden max-w-5xl w-full mx-auto">
           {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
@@ -76,11 +76,11 @@ function App() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSend}
-                className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors"
+                className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
               >
                 <Send size={20} />
               </button>
