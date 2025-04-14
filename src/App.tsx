@@ -14,7 +14,7 @@ function App() {
   ]);
   const [input, setInput] = useState('');
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     // Add user message
@@ -28,20 +28,28 @@ function App() {
     setInput('');
 
     // Generate bot response
-    const response = generateBotResponse(input);
-    const botMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      text: response.text,
-      isBot: true,
-      products: response.products,
-    };
+    try {
+      const response = await generateBotResponse(input);
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: response.text,
+        isBot: true,
+        products: response.products,
+      };
 
-    setTimeout(() => {
       setMessages(prev => [...prev, botMessage]);
-    }, 500);
+    } catch (error) {
+      console.error('Error getting bot response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm sorry, I encountered an error. Please try again.",
+        isBot: true,
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
