@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { MastraClient } from '@mastra/client-js';
-import { ChatMessage } from './components/ChatMessage';
 import { ProductCard } from './components/ProductCard';
 import { Message, Product, ProductResponse } from './types';
 
@@ -21,7 +20,7 @@ function App() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+
   const [error, setError] = useState<string | null>(null);
 
   const scrollToBottom = () => {
@@ -56,29 +55,33 @@ function App() {
         }]
       });
 
-      // Add bot message
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        text: response.text || String(response),
-        isBot: true,
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
+      let foundProducts: Product[] = [];
 
-      // Handle tool results from steps
+      // Extract products from tool results first
       if (response.steps?.length) {
         for (const step of response.steps) {
           if (step.toolResults?.length) {
             for (const result of step.toolResults) {
               if (result.toolName === 'searchProductsTool' && result.result) {
                 const productData = result.result as ProductResponse;
-                setProducts(productData.products || []);
-                return;
+                foundProducts = productData.products || [];
+                break;
               }
             }
           }
         }
       }
+
+      // Add bot message with both text and products
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        text: response.text || String(response),
+        isBot: true,
+        products: foundProducts
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setMessages(prev => [...prev, {
@@ -98,7 +101,18 @@ function App() {
           {/* Chat messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} mb-4`}>
+                <div className={`rounded-lg p-4 max-w-[85%] ${message.isBot ? 'bg-gray-200' : 'bg-blue-500 text-white'}`}>
+                  <div className="mb-2">{message.text}</div>
+                  {message.isBot && message.products && message.products.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                      {message.products.map(product => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
             {error && (
               <div className="p-4 bg-red-100 text-red-700 rounded-lg">
@@ -112,13 +126,6 @@ function App() {
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
-              </div>
-            )}
-            {products.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {products.map(product => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
               </div>
             )}
             <div ref={messagesEndRef} />
