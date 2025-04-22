@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { MastraClient } from '@mastra/client-js';
 import { ProductCard } from './components/ProductCard';
+import ReactMarkdown from 'react-markdown';
 import { Message, Product, ProductResponse } from './types';
 
 // Initialize the Mastra client
@@ -103,7 +104,7 @@ function App() {
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} mb-4`}>
                 <div className={`rounded-lg p-4 max-w-[85%] ${message.isBot ? 'bg-gray-200' : 'bg-blue-500 text-white'}`}>
-                  <div className="mb-2">{message.text}</div>
+                  <div className="mb-2"><ReactMarkdown>{message.text}</ReactMarkdown></div>
                   {message.isBot && message.products && message.products.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                       {message.products.map(product => (
