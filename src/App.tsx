@@ -65,11 +65,19 @@ function App() {
       
       setMessages(prev => [...prev, botMessage]);
 
-      // Check for product search results
-      const searchResults = response.toolResults?.find(result => result.toolName === 'searchProductsTool');
-      if (searchResults) {
-        const productData = searchResults.result as ProductResponse;
-        setProducts(productData.products || []);
+      // Handle tool results from steps
+      if (response.steps?.length) {
+        for (const step of response.steps) {
+          if (step.toolResults?.length) {
+            for (const result of step.toolResults) {
+              if (result.toolName === 'searchProductsTool' && result.result) {
+                const productData = result.result as ProductResponse;
+                setProducts(productData.products || []);
+                return;
+              }
+            }
+          }
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -80,13 +88,6 @@ function App() {
       }]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
