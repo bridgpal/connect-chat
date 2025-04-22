@@ -1,26 +1,26 @@
-# Product Assistant Chat
+# Connect Chat
 
-An interactive chatbot that helps users find and explore products using OpenAI's function calling capabilities.
+A modern shopping assistant chatbot built with React and Mastra.ai that helps users find and explore products through natural conversation.
+
+## Overview
+
+Connect Chat is a powerful shopping assistant that leverages Mastra.ai's capabilities to provide context-aware conversations with memory persistence. It integrates with the [mastra-shopping](https://github.com/bridgpal/mastra-shopping) backend to deliver a seamless shopping experience.
 
 ## Features
 
-- Real-time chat interface with loading indicators
-- Product search and filtering capabilities:
-  - Search by title/description
-  - Filter by maximum price
-  - Filter by category
-- Beautiful product card display
-- Responsive design
-- Seamless integration with OpenAI's API
+- **Intelligent Shopping Assistant**: Natural language understanding for product queries
+- **Context-Aware Conversations**: Maintains conversation history for more relevant responses
+- **Memory Persistence**: Remembers user preferences and previous interactions
+- **Client-Side Tools**: Handles product search functionality directly in the browser
+- **Responsive Design**: Works on desktop and mobile devices
+- **Modular Architecture**: Easy to extend and customize
 
 ## Tech Stack
 
-- React
+- React + Vite
 - TypeScript
-- Netlify Functions (for serverless backend)
-- OpenAI API
+- Mastra.ai SDK
 - Tailwind CSS
-- Lucide React (for icons)
 
 ## Project Structure
 
@@ -29,37 +29,46 @@ An interactive chatbot that helps users find and explore products using OpenAI's
   - `/data` - Product data source
   - `/utils` - Utility functions including chatbot logic
   - `/types` - TypeScript type definitions
-- `/netlify/functions` - Serverless function handling OpenAI API integration
 
 ## Getting Started
 
 1. Clone the repository
+   ```bash
+   git clone https://github.com/bridgpal/connect-chat.git
+   cd connect-chat
+   ```
+
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Set up environment variables:
-   Create a `.env` file with:
-   ```
-   OPENAI_API_KEY=your_api_key_here
-   ```
+3. Update the Mastra.ai baseUrl:
+   Open `src/App.tsx` and update the `baseUrl` to your Mastra.ai instance URL.
+
 4. Run the development server:
    ```bash
    npm run dev
    ```
 
-## Environment Variables
+## Integration with Mastra.ai
 
-- `OPENAI_API_KEY` - Your OpenAI API key
+Connect Chat uses Mastra.ai's client-side SDK to power the shopping assistant. Key integration points include:
 
-## Development
+- **Agent Generation**: Uses `agent.generate()` to process user messages
+- **Memory Management**: Tracks conversation history for context-aware responses
+- **Client-Side Tools**: Implements custom tools like `searchProductsTool` for in-browser functionality
 
-The chatbot uses OpenAI's function calling to process user queries and return relevant products. The main components are:
+## Customization
 
-- App.tsx - Main chat interface
-- openai.ts - OpenAI function calling implementation
-- ProductCard.tsx - Product display component
-- chatbot.ts - Chat logic and API integration
+You can customize the chatbot by:
+
+1. Modifying the product data in the `/data` directory
+2. Adjusting the UI components in the `/components` directory
+3. Extending the client-side tools in the agent configuration
+
+## Backend Integration
+
+This project works with the [mastra-shopping](https://github.com/bridgpal/mastra-shopping) backend, which provides additional product data and shopping functionality.
 
 ## License
 
