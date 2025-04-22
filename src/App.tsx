@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { MastraClient } from '@mastra/client-js';
-import { ProductCard } from './components/ProductCard';
-import ReactMarkdown from 'react-markdown';
 import { Message, Product, ProductResponse } from './types';
+import { MessageList } from './components/MessageList';
+import { ChatInput } from './components/ChatInput';
+
 
 // Initialize the Mastra client
 const mastraClient = new MastraClient({
@@ -99,60 +99,18 @@ function App() {
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       <div className="flex-1 flex items-stretch p-4 overflow-hidden">
         <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden max-w-5xl w-full mx-auto">
-          {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'} mb-4`}>
-                <div className={`rounded-lg p-4 max-w-[85%] ${message.isBot ? 'bg-gray-200' : 'bg-blue-500 text-white'}`}>
-                  <div className="mb-2"><ReactMarkdown>{message.text}</ReactMarkdown></div>
-                  {message.isBot && message.products && message.products.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                      {message.products.map(product => (
-                        <ProductCard key={product.id} product={product} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {error && (
-              <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-                {error}
-              </div>
-            )}
-            {isLoading && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-gray-200 rounded-lg p-4 flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          {/* Input area */}
-          <div className="border-t p-4 bg-white shrink-0">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSend}
-                disabled={isLoading}
-                className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-              >
-                <Send size={20} />
-              </button>
-            </div>
-          </div>
+          <MessageList
+            messages={messages}
+            error={error}
+            isLoading={isLoading}
+            messagesEndRef={messagesEndRef}
+          />
+          <ChatInput
+            input={input}
+            isLoading={isLoading}
+            onInputChange={setInput}
+            onSend={handleSend}
+          />
         </div>
       </div>
     </div>
