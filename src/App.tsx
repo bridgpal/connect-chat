@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
+import { MastraClient } from '@mastra/client-js';
 import { ChatMessage } from './components/ChatMessage';
-import { generateBotResponse } from './utils/chatbot';
-import { Message } from './types';
+import { ProductCard } from './components/ProductCard';
+import { Message, Product, ProductResponse } from './types';
+
+// Initialize the Mastra client
+const mastraClient = new MastraClient({
+  baseUrl: 'http://localhost:4111',
+});
 
 function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -15,6 +21,8 @@ function App() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,34 +45,39 @@ function App() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setError(null);
 
-    // Generate bot response
     try {
-      // Pass full message history for context
-      const chatHistory = messages.map(msg => ({
-        role: msg.isBot ? 'assistant' : 'user',
-        content: msg.isBot && msg.products ? 
-          JSON.stringify({ message: msg.text, products: msg.products }) : 
-          msg.text
-      }));
-      
-      const response = await generateBotResponse(input, chatHistory);
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response.text,
-        isBot: true,
-        products: response.products,
-      };
+      const agent = mastraClient.getAgent('shoppingAgent');
+      const response = await agent.generate({
+        messages: [{
+          role: 'user',
+          content: input
+        }]
+      });
 
+      // Add bot message
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        text: response.text || String(response),
+        isBot: true,
+      };
+      
       setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Error getting bot response:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+
+      // Check for product search results
+      const searchResults = response.toolResults?.find(result => result.toolName === 'searchProductsTool');
+      if (searchResults) {
+        const productData = searchResults.result as ProductResponse;
+        setProducts(productData.products || []);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
         text: "I'm sorry, I encountered an error. Please try again.",
         isBot: true,
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -78,45 +91,44 @@ function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
-      <div className="flex-1 flex items-stretch p-4 overflow-hidden">
-        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden max-w-5xl w-full mx-auto">
-          {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+    <div className="flex flex-col h-screen bg-gray-100">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map(message => (
+          <ChatMessage key={message.id} message={message} />
+        ))}
+        {error && (
+          <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+        {products.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {products.map(product => (
+              <ProductCard key={product.id} product={product} />
             ))}
-            {isLoading && (
-              <div className="flex justify-start mb-4">
-                <div className="bg-gray-200 rounded-lg p-4 flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
           </div>
-          
-          {/* Input area */}
-          <div className="border-t p-4 bg-white shrink-0">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleSend}
-                className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                <Send size={20} />
-              </button>
-            </div>
-          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="p-4 border-t bg-white">
+        <div className="flex space-x-4">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Type your message..."
+            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading}
+            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+          >
+            <Send size={20} />
+          </button>
         </div>
       </div>
     </div>
