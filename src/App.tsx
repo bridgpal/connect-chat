@@ -4,7 +4,6 @@ import { Message, Product, ProductResponse } from './types';
 import { MessageList } from './components/MessageList';
 import { ChatInput } from './components/ChatInput';
 
-
 // Initialize the Mastra client
 const mastraClient = new MastraClient({
   baseUrl: 'http://localhost:4111',
@@ -21,7 +20,6 @@ function App() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
 
   const scrollToBottom = () => {
@@ -49,11 +47,22 @@ function App() {
 
     try {
       const agent = mastraClient.getAgent('shoppingAgent');
+      
+      // Convert chat history to Mastra message format
+      const chatHistory = messages.map(msg => ({
+        role: msg.isBot ? 'assistant' : 'user',
+        content: msg.text
+      }));
+      
+      // Add the current user message
+      const mastraMessages = [
+        ...chatHistory,
+        { role: 'user', content: input }
+      ];
+      
+      // Send the full conversation history to maintain context
       const response = await agent.generate({
-        messages: [{
-          role: 'user',
-          content: input
-        }]
+        messages: mastraMessages
       });
 
       let foundProducts: Product[] = [];
