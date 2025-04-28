@@ -17,3 +17,9 @@ export interface Message {
   isBot: boolean;
   products?: Product[];
 }
+
+export enum ToastType {
+  Success = "success",
+  Error = "error",
+  Info = "info",
+}

@@ -13,7 +13,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div className="mb-4">
           <ReactMarkdown
             components={{
-              a: ({ node, ...props }) => (
+              a: ({ ...props }) => (
                 <a
                   {...props}
                   className="underline text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
