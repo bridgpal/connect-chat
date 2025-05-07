@@ -6,6 +6,14 @@ export interface Product {
   description?: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  image?: string;
+  parent?: string;
+}
+
 export interface ProductResponse {
   products: Product[];
   totalResults: number;
@@ -16,6 +24,9 @@ export interface Message {
   text: string;
   isBot: boolean;
   products?: Product[];
+  categories?: {
+    categories: Category[];
+  };
 }
 
 export enum ToastType {
