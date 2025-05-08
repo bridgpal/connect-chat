@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MastraClient } from "@mastra/client-js";
-import { Message, Product, ProductResponse } from "./types";
+import { Message, Product, ProductResponse, Category } from "./types";
 import { MessageList } from "./components/MessageList";
 import { ChatInput } from "./components/ChatInput";
 import { ToastProvider } from "./hooks/use-toast";
@@ -32,6 +32,11 @@ function App() {
     scrollToBottom();
   }, [messages]);
 
+  const handleCategoryClick = async (category: Category) => {
+    setInput(category.name);
+    await handleSend();
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -61,45 +66,48 @@ function App() {
 
       // Send the full conversation history to maintain context
       const response = await agent.generate({
-        messages: mastraMessages,
+        messages: mastraMessages as any, // Type assertion to fix linter error
       });
 
+      console.log("response", response);
       let foundProducts: Product[] = [];
+      let foundCategories: Category[] = [];
 
-      // Extract products from tool results first
+      // Extract products and categories from tool results
       if (response.steps?.length) {
         for (const step of response.steps) {
           if (step.toolResults?.length) {
             for (const result of step.toolResults) {
               if (result.toolName === "searchProductsTool" && result.result) {
                 const productData = result.result as ProductResponse;
-                foundProducts = productData.products || [];
-                break;
+                foundProducts = [...foundProducts, ...(productData.products || [])];
+              } else if (result.toolName === "getProductsByCategoryTool" && result.result) {
+                const productData = result.result as ProductResponse;
+                foundProducts = [...foundProducts, ...(productData.products || [])];
+              } else if (result.toolName === "getCategoriesTool" && result.result) {
+                // Ensure we're getting the categories array directly
+                const categoriesData = result.result;
+                foundCategories = Array.isArray(categoriesData) ? categoriesData : 
+                  (categoriesData.categories ? categoriesData.categories : []);
               }
             }
           }
         }
       }
 
-      // Add bot message with both text and products
+      // Add bot message with text, products, and/or categories
       const botMessage: Message = {
         id: Date.now().toString(),
         text: response.text || String(response),
         isBot: true,
         products: foundProducts,
+        categories: foundCategories ? { categories: foundCategories } : undefined,
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          text: "I'm sorry, I encountered an error. Please try again.",
-          isBot: true,
-        },
-      ]);
+    } catch (error) {
+      console.error("Error:", error);
+      setError("An error occurred while processing your request.");
     } finally {
       setIsLoading(false);
     }
@@ -115,6 +123,7 @@ function App() {
               error={error}
               isLoading={isLoading}
               messagesEndRef={messagesEndRef}
+              onCategoryClick={handleCategoryClick}
             />
             <ChatInput
               input={input}
